@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>线段树算法可视化演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 30px 40px 40px 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d8cf0;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .controls input, .controls button {
+            font-size: 16px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: 1px solid #dcdcdc;
+        }
+        .controls button {
+            background: #2d8cf0;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .controls button:hover {
+            background: #1a6ed8;
+        }
+        #tree-visual {
+            margin: 30px 0 20px 0;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .tree-level {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .tree-node {
+            background: #e6f7ff;
+            border: 2px solid #2d8cf0;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 8px;
+            font-weight: bold;
+            color: #2d8cf0;
+            font-size: 18px;
+            position: relative;
+            transition: background 0.3s, border 0.3s;
+        }
+        .tree-node.active {
+            background: #ffd666;
+            border-color: #faad14;
+            color: #faad14;
+        }
+        .tree-node.leaf {
+            background: #fffbe6;
+            border-color: #faad14;
+            color: #faad14;
+        }
+        .code-section {
+            background: #282c34;
+            color: #fff;
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin-top: 30px;
+            font-size: 15px;
+            overflow-x: auto;
+        }
+        .code-section code {
+            font-family: 'Fira Mono', 'Consolas', monospace;
+            color: #fff;
+        }
+        .desc {
+            color: #666;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 10px; }
+            .controls { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>线段树算法可视化演示</h1>
+    <div class="desc">支持区间求和、单点修改，输入数组后可交互操作</div>
+    <div class="controls">
+        <input id="input-array" type="text" placeholder="输入数组，如 1,2,3,4,5" style="width:220px;">
+        <button onclick="initTree()">初始化线段树</button>
+        <input id="query-l" type="number" placeholder="查询左端点 l" min="0" style="width:120px;">
+        <input id="query-r" type="number" placeholder="查询右端点 r" min="0" style="width:120px;">
+        <button onclick="queryRange()">区间查询</button>
+        <input id="update-idx" type="number" placeholder="修改下标 i" min="0" style="width:120px;">
+        <input id="update-val" type="number" placeholder="新值 val" style="width:120px;">
+        <button onclick="updatePoint()">单点修改</button>
+    </div>
+    <div id="tree-visual"></div>
+    <div id="result" style="text-align:center;font-size:18px;color:#fa541c;"></div>
+    <div class="code-section">
+        <b>线段树核心代码：</b>
+        <pre><code id="code-block"></code></pre>
+    </div>
+</div>
+<script>
+// 线段树实现与可视化
+class SegmentTree {
+    constructor(arr) {
+        this.n = arr.length;
+        this.tree = new Array(this.n * 4).fill(0);
+        this.build(arr, 1, 0, this.n - 1);
+    }
+    build(arr, node, l, r) {
+        if (l === r) {
+            this.tree[node] = arr[l];
+            return;
+        }
+        const mid = (l + r) >> 1;
+        this.build(arr, node * 2, l, mid);
+        this.build(arr, node * 2 + 1, mid + 1, r);
+        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+    }
+    query(L, R, node = 1, l = 0, r = this.n - 1, highlight = []) {
+        highlight.push({node, l, r});
+        if (L <= l && r <= R) return this.tree[node];
+        let mid = (l + r) >> 1, res = 0;
+        if (L <= mid) res += this.query(L, R, node * 2, l, mid, highlight);
+        if (R > mid) res += this.query(L, R, node * 2 + 1, mid + 1, r, highlight);
+        return res;
+    }
+    update(idx, val, node = 1, l = 0, r = this.n - 1, highlight = []) {
+        highlight.push({node, l, r});
+        if (l === r) {
+            this.tree[node] = val;
+            return;
+        }
+        let mid = (l + r) >> 1;
+        if (idx <= mid) this.update(idx, val, node * 2, l, mid, highlight);
+        else this.update(idx, val, node * 2 + 1, mid + 1, r, highlight);
+        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+    }
+}
+
+let segTree = null, arr = [];
+
+function initTree() {
+    const input = document.getElementById('input-array').value.trim();
+    if (!input) { alert('请输入数组'); return; }
+    arr = input.split(',').map(x => +x.trim());
+    if (arr.some(isNaN)) { alert('数组格式错误'); return; }
+    segTree = new SegmentTree(arr);
+    document.getElementById('result').innerText = '';
+    renderTree();
+}
+
+function queryRange() {
+    if (!segTree) { alert('请先初始化线段树'); return; }
+    let l = +document.getElementById('query-l').value;
+    let r = +document.getElementById('query-r').value;
+    if (isNaN(l) || isNaN(r) || l < 0 || r >= arr.length || l > r) {
+        alert('区间输入有误'); return;
+    }
+    let highlight = [];
+    let res = segTree.query(l, r, 1, 0, arr.length - 1, highlight);
+    renderTree(highlight);
+    document.getElementById('result').innerText = `区间 [${l}, ${r}] 的和为：${res}`;
+}
+
+function updatePoint() {
+    if (!segTree) { alert('请先初始化线段树'); return; }
+    let idx = +document.getElementById('update-idx').value;
+    let val = +document.getElementById('update-val').value;
+    if (isNaN(idx) || isNaN(val) || idx < 0 || idx >= arr.length) {
+        alert('修改输入有误'); return;
+    }
+    let highlight = [];
+    segTree.update(idx, val, 1, 0, arr.length - 1, highlight);
+    arr[idx] = val;
+    renderTree(highlight);
+    document.getElementById('result').innerText = `下标 ${idx} 已修改为 ${val}`;
+}
+
+function renderTree(highlight=[]) {
+    if (!segTree) return;
+    const n = arr.length;
+    const tree = segTree.tree;
+    const levels = [];
+    let maxLevel = Math.ceil(Math.log2(n)) + 1;
+    for (let level = 1, start = 1; level <= maxLevel; ++level, start *= 2) {
+        let nodes = [];
+        for (let i = 0; i < start && (start + i) <= n * 4; ++i) {
+            let idx = start + i;
+            if (idx >= tree.length) break;
+            if (tree[idx] === undefined) continue;
+            let nodeClass = 'tree-node';
+            if (highlight.some(h => h.node === idx)) nodeClass += ' active';
+            if (level === maxLevel) nodeClass += ' leaf';
+            nodes.push(`<div class="${nodeClass}">${tree[idx]}</div>`);
+        }
+        if (nodes.length) levels.push(`<div class="tree-level">${nodes.join('')}</div>`);
+    }
+    document.getElementById('tree-visual').innerHTML = levels.join('');
+}
+
+// 展示代码
+const codeStr = `class SegmentTree {
+    constructor(arr) {
+        this.n = arr.length;
+        this.tree = new Array(this.n * 4).fill(0);
+        this.build(arr, 1, 0, this.n - 1);
+    }
+    build(arr, node, l, r) {
+        if (l === r) {
+            this.tree[node] = arr[l];
+            return;
+        }
+        const mid = (l + r) >> 1;
+        this.build(arr, node * 2, l, mid);
+        this.build(arr, node * 2 + 1, mid + 1, r);
+        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+    }
+    query(L, R, node = 1, l = 0, r = this.n - 1, highlight = []) {
+        highlight.push({node, l, r});
+        if (L <= l && r <= R) return this.tree[node];
+        let mid = (l + r) >> 1, res = 0;
+        if (L <= mid) res += this.query(L, R, node * 2, l, mid, highlight);
+        if (R > mid) res += this.query(L, R, node * 2 + 1, mid + 1, r, highlight);
+        return res;
+    }
+    update(idx, val, node = 1, l = 0, r = this.n - 1, highlight = []) {
+        highlight.push({node, l, r});
+        if (l === r) {
+            this.tree[node] = val;
+            return;
+        }
+        let mid = (l + r) >> 1;
+        if (idx <= mid) this.update(idx, val, node * 2, l, mid, highlight);
+        else this.update(idx, val, node * 2 + 1, mid + 1, r, highlight);
+        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+    }
+}`;
+document.getElementById('code-block').innerText = codeStr;
+</script>
+</body>
+</html>
