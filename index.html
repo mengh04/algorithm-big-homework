@@ -1,271 +1,528 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
 <head>
-    <meta charset="UTF-8">
-    <title>线段树算法可视化演示</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f5f6fa;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1100px;
-            margin: 30px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            padding: 30px 40px 40px 40px;
-        }
-        h1 {
-            text-align: center;
-            color: #2d8cf0;
-        }
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-        .controls input, .controls button {
-            font-size: 16px;
-            padding: 6px 12px;
-            border-radius: 5px;
-            border: 1px solid #dcdcdc;
-        }
-        .controls button {
-            background: #2d8cf0;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .controls button:hover {
-            background: #1a6ed8;
-        }
-        #tree-visual {
-            margin: 30px 0 20px 0;
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .tree-level {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .tree-node {
-            background: #e6f7ff;
-            border: 2px solid #2d8cf0;
-            border-radius: 50%;
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 8px;
-            font-weight: bold;
-            color: #2d8cf0;
-            font-size: 18px;
-            position: relative;
-            transition: background 0.3s, border 0.3s;
-        }
-        .tree-node.active {
-            background: #ffd666;
-            border-color: #faad14;
-            color: #faad14;
-        }
-        .tree-node.leaf {
-            background: #fffbe6;
-            border-color: #faad14;
-            color: #faad14;
-        }
-        .code-section {
-            background: #282c34;
-            color: #fff;
-            border-radius: 8px;
-            padding: 18px 20px;
-            margin-top: 30px;
-            font-size: 15px;
-            overflow-x: auto;
-        }
-        .code-section code {
-            font-family: 'Fira Mono', 'Consolas', monospace;
-            color: #fff;
-        }
-        .desc {
-            color: #666;
-            text-align: center;
-            margin-bottom: 18px;
-        }
-        @media (max-width: 700px) {
-            .container { padding: 10px; }
-            .controls { flex-direction: column; gap: 10px; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>线段树可视化演示</title>
+  <style>
+    :root {
+      --primary: #4f8cff;
+      --secondary: #f5f7fa;
+      --accent: #ffb347;
+      --success: #4caf50;
+      --danger: #e74c3c;
+      --node-size: 48px;
+      --node-font: 16px;
+      --duration: 0.5s;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'PingFang SC', 'Hiragino Sans', Arial, sans-serif;
+      background: var(--secondary);
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 1.2rem 0 0.8rem 0;
+      text-align: center;
+      font-size: 2rem;
+      letter-spacing: 2px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 0.5rem 2rem 0.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .desc {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.2rem;
+      font-size: 1.05rem;
+      box-shadow: 0 2px 8px #0001;
+      line-height: 1.7;
+      max-width: 700px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .controls label {
+      font-size: 1rem;
+      margin-right: 0.5em;
+    }
+    .controls input[type="text"], .controls input[type="number"] {
+      padding: 0.4em 0.7em;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      font-size: 1rem;
+      width: 120px;
+      transition: border-color 0.2s;
+    }
+    .controls input[type="text"]:focus, .controls input[type="number"]:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+    .controls button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5em 1.2em;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 6px #0001;
+    }
+    .controls button:active {
+      background: #2563eb;
+    }
+    .svg-container {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px #0002;
+      padding: 1.2rem 0.5rem 0.5rem 0.5rem;
+      margin-bottom: 1.2rem;
+      min-height: 320px;
+      transition: min-height 0.3s;
+      white-space: nowrap;
+      /* 让SVG横向滚动更流畅 */
+      scrollbar-color: var(--primary) #eee;
+      scrollbar-width: thin;
+    }
+    .svg-container svg {
+      width: unset;
+      min-width: 600px;
+      height: 100%;
+      min-height: 320px;
+      display: inline-block;
+    }
+    .legend {
+      display: flex;
+      gap: 1.5em;
+      font-size: 0.98rem;
+      margin-bottom: 0.7em;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+    }
+    .legend .color {
+      width: 1.2em;
+      height: 1.2em;
+      border-radius: 50%;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.2em;
+    }
+    .legend .build { background: var(--primary);}
+    .legend .query { background: var(--accent);}
+    .legend .update { background: var(--success);}
+    .legend .affected { background: var(--danger);}
+    .tip {
+      color: #888;
+      font-size: 0.98rem;
+      margin-bottom: 0.5em;
+      text-align: center;
+    }
+    @media (max-width: 700px) {
+      header { font-size: 1.3rem; }
+      .container { padding: 0.5rem 0.2rem 1rem 0.2rem; }
+      .desc { font-size: 0.98rem; padding: 0.7rem 0.5rem;}
+      .svg-container { min-height: 220px; }
+    }
+    /* SVG node/edge styles */
+    .seg-node {
+      transition: fill var(--duration), stroke var(--duration);
+      cursor: pointer;
+    }
+    .seg-label {
+      font-size: var(--node-font);
+      font-weight: bold;
+      pointer-events: none;
+      user-select: none;
+    }
+    .seg-range {
+      font-size: 12px;
+      fill: #666;
+      pointer-events: none;
+      user-select: none;
+    }
+    .seg-edge {
+      stroke: #bbb;
+      stroke-width: 2;
+      transition: stroke var(--duration);
+    }
+    .seg-node.build { fill: var(--primary); stroke: #2563eb; }
+    .seg-node.query { fill: var(--accent); stroke: #e67e22; }
+    .seg-node.update { fill: var(--success); stroke: #388e3c; }
+    .seg-node.affected { fill: var(--danger); stroke: #c0392b; }
+    .seg-node.default { fill: #fff; stroke: #bbb; }
+    .seg-node.leaf { stroke-dasharray: 3 2; }
+    .seg-node.animated {
+      animation: pop 0.5s;
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.18); }
+      60% { transform: scale(0.95);}
+      100% { transform: scale(1);}
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-    <h1>线段树算法可视化演示</h1>
-    <div class="desc">支持区间求和、单点修改，输入数组后可交互操作</div>
+  <header>线段树（Segment Tree）可视化演示</header>
+  <div class="container">
+    <div class="desc">
+      <b>线段树</b>是一种高效处理区间查询与单点/区间修改的数据结构。<br>
+      本页面支持输入任意整数数组，动态可视化线段树的构建、区间查询和单点更新过程。<br>
+      <ul>
+        <li>每个节点代表一个区间 <code>[l, r]</code> 及其区间值（如区间和）。</li>
+        <li>支持区间查询（如 <code>[2, 5]</code>）和单点更新（如 <code>index 3 改为 8</code>）。</li>
+        <li>所有操作均有动画演示，帮助理解线段树的递归分治思想。</li>
+      </ul>
+    </div>
     <div class="controls">
-        <input id="input-array" type="text" placeholder="输入数组，如 1,2,3,4,5" style="width:220px;">
-        <button onclick="initTree()">初始化线段树</button>
-        <input id="query-l" type="number" placeholder="查询左端点 l" min="0" style="width:120px;">
-        <input id="query-r" type="number" placeholder="查询右端点 r" min="0" style="width:120px;">
-        <button onclick="queryRange()">区间查询</button>
-        <input id="update-idx" type="number" placeholder="修改下标 i" min="0" style="width:120px;">
-        <input id="update-val" type="number" placeholder="新值 val" style="width:120px;">
-        <button onclick="updatePoint()">单点修改</button>
+      <label>输入数组（用逗号分隔）：<input id="input-array" type="text" value="2,1,5,3,4,7,6"></label>
+      <button id="build-btn">构建线段树</button>
+      <label>区间查询 [<input id="query-l" type="number" min="0" style="width:3em">, <input id="query-r" type="number" min="0" style="width:3em">]</label>
+      <button id="query-btn">查询</button>
+      <label>单点更新 index <input id="update-idx" type="number" min="0" style="width:3em"> → <input id="update-val" type="number" style="width:4em"></label>
+      <button id="update-btn">更新</button>
     </div>
-    <div id="tree-visual"></div>
-    <div id="result" style="text-align:center;font-size:18px;color:#fa541c;"></div>
-    <div class="code-section">
-        <b>线段树核心代码：</b>
-        <pre><code id="code-block"></code></pre>
+    <div class="legend">
+      <span><span class="color build"></span>构建/正常</span>
+      <span><span class="color query"></span>查询路径</span>
+      <span><span class="color update"></span>更新路径</span>
+      <span><span class="color affected"></span>被修改节点</span>
     </div>
-</div>
-<script>
-// 线段树实现与可视化
-class SegmentTree {
-    constructor(arr) {
-        this.n = arr.length;
-        this.tree = new Array(this.n * 4).fill(0);
-        this.build(arr, 1, 0, this.n - 1);
+    <div class="tip" id="tip">
+      输入数组后点击“构建线段树”，再尝试区间查询或单点更新，观察动画演示。
+    </div>
+    <div class="svg-container" id="svg-container">
+      <!-- SVG 线段树可视化区域 -->
+    </div>
+  </div>
+  <script>
+    // --- 线段树数据结构与可视化 ---
+    class SegmentTreeNode {
+      constructor(l, r, val, idx) {
+        this.l = l; this.r = r; this.val = val;
+        this.left = null; this.right = null;
+        this.idx = idx; // 节点编号，便于可视化定位
+        this.x = 0; this.y = 0; // 可视化坐标
+      }
     }
-    build(arr, node, l, r) {
-        if (l === r) {
-            this.tree[node] = arr[l];
+    class SegmentTree {
+      constructor(arr) {
+        this.arr = arr.slice();
+        this.root = null;
+        this.nodes = []; // 所有节点，按编号存储
+        this.build();
+      }
+      build() {
+        this.nodes = [];
+        let idx = 0;
+        const buildRec = (l, r) => {
+          let node = new SegmentTreeNode(l, r, 0, idx++);
+          if (l === r) {
+            node.val = this.arr[l];
+          } else {
+            let m = (l + r) >> 1;
+            node.left = buildRec(l, m);
+            node.right = buildRec(m + 1, r);
+            node.val = node.left.val + node.right.val;
+          }
+          this.nodes.push(node);
+          return node;
+        };
+        this.root = buildRec(0, this.arr.length - 1);
+      }
+      // 区间查询，返回路径节点
+      query(qL, qR) {
+        let path = [];
+        const dfs = (node, l, r) => {
+          if (!node || r < qL || l > qR) return 0;
+          path.push(node);
+          if (qL <= l && r <= qR) return node.val;
+          let m = (l + r) >> 1;
+          return dfs(node.left, l, m) + dfs(node.right, m + 1, r);
+        };
+        let res = dfs(this.root, 0, this.arr.length - 1);
+        return {res, path};
+      }
+      // 单点更新，返回路径节点和被修改节点
+      update(idx, val) {
+        let path = [];
+        let affected = [];
+        const dfs = (node, l, r) => {
+          if (!node) return;
+          path.push(node);
+          if (l === r && l === idx) {
+            node.val = val;
+            affected.push(node);
             return;
+          }
+          let m = (l + r) >> 1;
+          if (idx <= m) dfs(node.left, l, m);
+          else dfs(node.right, m + 1, r);
+          let old = node.val;
+          node.val = node.left.val + node.right.val;
+          if (node.val !== old) affected.push(node);
+        };
+        dfs(this.root, 0, this.arr.length - 1);
+        this.arr[idx] = val;
+        return {path, affected};
+      }
+    }
+
+    // --- 可视化相关 ---
+    const svgNS = "http://www.w3.org/2000/svg";
+    const nodeRadius = 24;
+    const nodeGapX = 36;
+    const nodeGapY = 70;
+    let tree = null;
+    let animating = false;
+
+    function layoutTree(node, depth, xMin, xMax, posMap) {
+      if (!node) return;
+      let x = (xMin + xMax) / 2;
+      let y = depth * nodeGapY + 40;
+      node.x = x; node.y = y;
+      posMap[node.idx] = {x, y};
+      if (node.left && node.right) {
+        let mid = (xMin + xMax) / 2;
+        layoutTree(node.left, depth + 1, xMin, mid, posMap);
+        layoutTree(node.right, depth + 1, mid, xMax, posMap);
+      }
+    }
+
+    function calcTreeWidth(depth) {
+      // 叶子节点数 = n
+      return Math.max(320, (Math.pow(2, depth) * (nodeRadius * 2 + nodeGapX)));
+    }
+
+    function getTreeDepth(node) {
+      if (!node) return 0;
+      if (!node.left && !node.right) return 1;
+      return 1 + Math.max(getTreeDepth(node.left), getTreeDepth(node.right));
+    }
+
+    function renderTree(tree, highlight = {}, animateNodes = []) {
+      const svgC = document.getElementById('svg-container');
+      svgC.innerHTML = '';
+      if (!tree || !tree.root) return;
+      let depth = getTreeDepth(tree.root);
+      let width = calcTreeWidth(depth);
+      let height = depth * nodeGapY + 80;
+      let posMap = {};
+      layoutTree(tree.root, 0, nodeRadius * 2, width - nodeRadius * 2, posMap);
+
+      let svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('width', width);
+      svg.setAttribute('height', height);
+
+      // 画边
+      function drawEdges(node) {
+        if (!node) return;
+        if (node.left) {
+          let line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', node.x);
+          line.setAttribute('y1', node.y);
+          line.setAttribute('x2', node.left.x);
+          line.setAttribute('y2', node.left.y);
+          line.setAttribute('class', 'seg-edge');
+          svg.appendChild(line);
+          drawEdges(node.left);
         }
-        const mid = (l + r) >> 1;
-        this.build(arr, node * 2, l, mid);
-        this.build(arr, node * 2 + 1, mid + 1, r);
-        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
-    }
-    query(L, R, node = 1, l = 0, r = this.n - 1, highlight = []) {
-        highlight.push({node, l, r});
-        if (L <= l && r <= R) return this.tree[node];
-        let mid = (l + r) >> 1, res = 0;
-        if (L <= mid) res += this.query(L, R, node * 2, l, mid, highlight);
-        if (R > mid) res += this.query(L, R, node * 2 + 1, mid + 1, r, highlight);
-        return res;
-    }
-    update(idx, val, node = 1, l = 0, r = this.n - 1, highlight = []) {
-        highlight.push({node, l, r});
-        if (l === r) {
-            this.tree[node] = val;
-            return;
+        if (node.right) {
+          let line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', node.x);
+          line.setAttribute('y1', node.y);
+          line.setAttribute('x2', node.right.x);
+          line.setAttribute('y2', node.right.y);
+          line.setAttribute('class', 'seg-edge');
+          svg.appendChild(line);
+          drawEdges(node.right);
         }
-        let mid = (l + r) >> 1;
-        if (idx <= mid) this.update(idx, val, node * 2, l, mid, highlight);
-        else this.update(idx, val, node * 2 + 1, mid + 1, r, highlight);
-        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
-    }
-}
+      }
+      drawEdges(tree.root);
 
-let segTree = null, arr = [];
+      // 画节点
+      function drawNodes(node) {
+        if (!node) return;
+        let g = document.createElementNS(svgNS, 'g');
+        let nodeClass = 'seg-node default';
+        if (highlight[node.idx]) nodeClass = 'seg-node ' + highlight[node.idx];
+        if (!node.left && !node.right) nodeClass += ' leaf';
+        if (animateNodes.includes(node.idx)) nodeClass += ' animated';
 
-function initTree() {
-    const input = document.getElementById('input-array').value.trim();
-    if (!input) { alert('请输入数组'); return; }
-    arr = input.split(',').map(x => +x.trim());
-    if (arr.some(isNaN)) { alert('数组格式错误'); return; }
-    segTree = new SegmentTree(arr);
-    document.getElementById('result').innerText = '';
-    renderTree();
-}
+        let circle = document.createElementNS(svgNS, 'circle');
+        circle.setAttribute('cx', node.x);
+        circle.setAttribute('cy', node.y);
+        circle.setAttribute('r', nodeRadius);
+        circle.setAttribute('class', nodeClass);
+        g.appendChild(circle);
 
-function queryRange() {
-    if (!segTree) { alert('请先初始化线段树'); return; }
-    let l = +document.getElementById('query-l').value;
-    let r = +document.getElementById('query-r').value;
-    if (isNaN(l) || isNaN(r) || l < 0 || r >= arr.length || l > r) {
-        alert('区间输入有误'); return;
-    }
-    let highlight = [];
-    let res = segTree.query(l, r, 1, 0, arr.length - 1, highlight);
-    renderTree(highlight);
-    document.getElementById('result').innerText = `区间 [${l}, ${r}] 的和为：${res}`;
-}
+        // 区间值
+        let label = document.createElementNS(svgNS, 'text');
+        label.setAttribute('x', node.x);
+        label.setAttribute('y', node.y + 6);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('class', 'seg-label');
+        label.textContent = node.val;
+        g.appendChild(label);
 
-function updatePoint() {
-    if (!segTree) { alert('请先初始化线段树'); return; }
-    let idx = +document.getElementById('update-idx').value;
-    let val = +document.getElementById('update-val').value;
-    if (isNaN(idx) || isNaN(val) || idx < 0 || idx >= arr.length) {
-        alert('修改输入有误'); return;
-    }
-    let highlight = [];
-    segTree.update(idx, val, 1, 0, arr.length - 1, highlight);
-    arr[idx] = val;
-    renderTree(highlight);
-    document.getElementById('result').innerText = `下标 ${idx} 已修改为 ${val}`;
-}
+        // 区间范围
+        let range = document.createElementNS(svgNS, 'text');
+        range.setAttribute('x', node.x);
+        range.setAttribute('y', node.y + nodeRadius + 16);
+        range.setAttribute('text-anchor', 'middle');
+        range.setAttribute('class', 'seg-range');
+        range.textContent = `[${node.l},${node.r}]`;
+        g.appendChild(range);
 
-function renderTree(highlight=[]) {
-    if (!segTree) return;
-    const n = arr.length;
-    const tree = segTree.tree;
-    const levels = [];
-    let maxLevel = Math.ceil(Math.log2(n)) + 1;
-    for (let level = 1, start = 1; level <= maxLevel; ++level, start *= 2) {
-        let nodes = [];
-        for (let i = 0; i < start && (start + i) <= n * 4; ++i) {
-            let idx = start + i;
-            if (idx >= tree.length) break;
-            if (tree[idx] === undefined) continue;
-            let nodeClass = 'tree-node';
-            if (highlight.some(h => h.node === idx)) nodeClass += ' active';
-            if (level === maxLevel) nodeClass += ' leaf';
-            nodes.push(`<div class="${nodeClass}">${tree[idx]}</div>`);
-        }
-        if (nodes.length) levels.push(`<div class="tree-level">${nodes.join('')}</div>`);
-    }
-    document.getElementById('tree-visual').innerHTML = levels.join('');
-}
+        svg.appendChild(g);
 
-// 展示代码
-const codeStr = `class SegmentTree {
-    constructor(arr) {
-        this.n = arr.length;
-        this.tree = new Array(this.n * 4).fill(0);
-        this.build(arr, 1, 0, this.n - 1);
+        drawNodes(node.left);
+        drawNodes(node.right);
+      }
+      drawNodes(tree.root);
+
+      svgC.appendChild(svg);
     }
-    build(arr, node, l, r) {
-        if (l === r) {
-            this.tree[node] = arr[l];
-            return;
-        }
-        const mid = (l + r) >> 1;
-        this.build(arr, node * 2, l, mid);
-        this.build(arr, node * 2 + 1, mid + 1, r);
-        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+
+    // --- 动画辅助 ---
+    function sleep(ms) {
+      return new Promise(res => setTimeout(res, ms));
     }
-    query(L, R, node = 1, l = 0, r = this.n - 1, highlight = []) {
-        highlight.push({node, l, r});
-        if (L <= l && r <= R) return this.tree[node];
-        let mid = (l + r) >> 1, res = 0;
-        if (L <= mid) res += this.query(L, R, node * 2, l, mid, highlight);
-        if (R > mid) res += this.query(L, R, node * 2 + 1, mid + 1, r, highlight);
-        return res;
+    async function animatePath(tree, path, type, affected = []) {
+      let highlight = {};
+      // 动画顺序从下往上
+      let revPath = path.slice().reverse();
+      for (let i = 0; i < revPath.length; ++i) {
+        highlight = {};
+        for (let j = 0; j <= i; ++j) highlight[revPath[j].idx] = type;
+        for (let node of affected) highlight[node.idx] = 'affected';
+        renderTree(tree, highlight, [revPath[i].idx]);
+        await sleep(400);
+      }
+      // 最终高亮所有路径
+      highlight = {};
+      for (let node of revPath) highlight[node.idx] = type;
+      for (let node of affected) highlight[node.idx] = 'affected';
+      renderTree(tree, highlight, affected.map(n => n.idx));
+      await sleep(600);
+      renderTree(tree); // 恢复默认
     }
-    update(idx, val, node = 1, l = 0, r = this.n - 1, highlight = []) {
-        highlight.push({node, l, r});
-        if (l === r) {
-            this.tree[node] = val;
-            return;
-        }
-        let mid = (l + r) >> 1;
-        if (idx <= mid) this.update(idx, val, node * 2, l, mid, highlight);
-        else this.update(idx, val, node * 2 + 1, mid + 1, r, highlight);
-        this.tree[node] = this.tree[node * 2] + this.tree[node * 2 + 1];
+
+    // --- 交互逻辑 ---
+    function showTip(msg, color = '#888') {
+      const tip = document.getElementById('tip');
+      tip.textContent = msg;
+      tip.style.color = color;
     }
-}`;
-document.getElementById('code-block').innerText = codeStr;
-</script>
+
+    document.getElementById('build-btn').onclick = async function() {
+      if (animating) return;
+      let arrStr = document.getElementById('input-array').value.trim();
+      if (!arrStr) {
+        showTip('请输入数组，例如：2,1,5,3,4,7,6', 'var(--danger)');
+        return;
+      }
+      let arr = arrStr.split(',').map(s => parseInt(s.trim())).filter(x => !isNaN(x));
+      if (arr.length === 0) {
+        showTip('数组格式不正确，请用英文逗号分隔整数。', 'var(--danger)');
+        return;
+      }
+      if (arr.length > 16) {
+        showTip('数组长度建议不超过16，便于可视化。', 'var(--danger)');
+        return;
+      }
+      tree = new SegmentTree(arr);
+      animating = true;
+      showTip('正在构建线段树...');
+      // 构建动画：自底向上依次高亮
+      let buildPath = [];
+      function collectBuildPath(node) {
+        if (!node) return;
+        collectBuildPath(node.left);
+        collectBuildPath(node.right);
+        buildPath.push(node);
+      }
+      collectBuildPath(tree.root);
+      for (let i = 0; i < buildPath.length; ++i) {
+        let highlight = {};
+        for (let j = 0; j <= i; ++j) highlight[buildPath[j].idx] = 'build';
+        renderTree(tree, highlight, [buildPath[i].idx]);
+        await sleep(220);
+      }
+      renderTree(tree);
+      animating = false;
+      showTip('线段树构建完成！可尝试区间查询或单点更新。', 'var(--success)');
+    };
+
+    document.getElementById('query-btn').onclick = async function() {
+      if (animating || !tree) return;
+      let l = parseInt(document.getElementById('query-l').value);
+      let r = parseInt(document.getElementById('query-r').value);
+      if (isNaN(l) || isNaN(r) || l < 0 || r < 0 || l > r || r >= tree.arr.length) {
+        showTip('请输入有效的区间 [l, r]，0 ≤ l ≤ r < 数组长度。', 'var(--danger)');
+        return;
+      }
+      animating = true;
+      showTip(`查询区间 [${l}, ${r}] 的区间和...`);
+      let {res, path} = tree.query(l, r);
+      await animatePath(tree, path, 'query');
+      showTip(`区间 [${l}, ${r}] 的区间和为 ${res}。`, 'var(--accent)');
+      animating = false;
+    };
+
+    document.getElementById('update-btn').onclick = async function() {
+      if (animating || !tree) return;
+      let idx = parseInt(document.getElementById('update-idx').value);
+      let val = parseInt(document.getElementById('update-val').value);
+      if (isNaN(idx) || isNaN(val) || idx < 0 || idx >= tree.arr.length) {
+        showTip('请输入有效的下标和新值，0 ≤ index < 数组长度。', 'var(--danger)');
+        return;
+      }
+      animating = true;
+      showTip(`将下标 ${idx} 的值修改为 ${val}...`);
+      let {path, affected} = tree.update(idx, val);
+      await animatePath(tree, path, 'update', affected);
+      showTip(`已将下标 ${idx} 的值修改为 ${val}，相关区间已更新。`, 'var(--success)');
+      animating = false;
+    };
+
+    // 初始渲染
+    window.onload = () => {
+      renderTree(null);
+    };
+    // 移动端适配：输入框宽度
+    if (window.innerWidth < 600) {
+      document.querySelectorAll('.controls input').forEach(inp => inp.style.width = '2.5em');
+    }
+  </script>
 </body>
 </html>
