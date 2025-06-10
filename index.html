@@ -181,13 +181,99 @@
     .seg-node.default { fill: #fff; stroke: #bbb; }
     .seg-node.leaf { stroke-dasharray: 3 2; }
     .seg-node.animated {
-      animation: pop 0.5s;
+      animation: pop-rotate 0.5s;
     }
-    @keyframes pop {
-      0% { transform: scale(1); }
-      30% { transform: scale(1.18); }
-      60% { transform: scale(0.95);}
-      100% { transform: scale(1);}
+    @keyframes pop-rotate {
+      0% { transform: scale(1) rotate(0deg); }
+      30% { transform: scale(1.18) rotate(-10deg); }
+      60% { transform: scale(0.95) rotate(8deg);}
+      100% { transform: scale(1) rotate(0deg);}
+    }
+    .array-bar {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 0.5em;
+      margin: 1.2em 0 0.5em 0;
+      user-select: none;
+      flex-wrap: wrap;
+    }
+    .array-item {
+      background: #fff;
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      min-width: 36px;
+      min-height: 36px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s, border 0.3s, transform 0.3s;
+      position: relative;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .array-item.highlight {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      transform: scale(1.15) translateY(-8px);
+      z-index: 2;
+    }
+    .array-item.update {
+      background: var(--success);
+      color: #fff;
+      border-color: var(--success);
+      animation: pop-rotate 0.5s;
+    }
+    .array-index {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 2px;
+    }
+    .op-type-bar {
+      display: flex;
+      gap: 0.7em;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 0.5em;
+    }
+    .op-type-btn {
+      background: #fff;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      border-radius: 6px;
+      padding: 0.2em 0.9em;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border 0.2s;
+    }
+    .op-type-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .seg-node.animated {
+      animation: pop-rotate 0.5s;
+    }
+    .seg-node:hover {
+      filter: drop-shadow(0 0 8px var(--accent));
+    }
+    .seg-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: #fff;
+      color: #333;
+      border: 1.5px solid var(--primary);
+      border-radius: 6px;
+      padding: 0.3em 0.7em;
+      font-size: 0.98em;
+      box-shadow: 0 2px 8px #0002;
+      z-index: 99;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
     }
   </style>
 </head>
@@ -223,6 +309,13 @@
     <div class="svg-container" id="svg-container">
       <!-- SVG 线段树可视化区域 -->
     </div>
+    <div class="op-type-bar">
+      <span>区间运算类型：</span>
+      <button class="op-type-btn active" id="op-sum">区间和</button>
+      <button class="op-type-btn" id="op-min">区间最小值</button>
+      <button class="op-type-btn" id="op-max">区间最大值</button>
+    </div>
+    <div class="array-bar" id="array-bar"></div>
   </div>
   <script>
     // --- 线段树数据结构与可视化 ---
@@ -237,8 +330,9 @@
     class SegmentTree {
       constructor(arr) {
         this.arr = arr.slice();
+        arrRaw = arr.slice();
         this.root = null;
-        this.nodes = []; // 所有节点，按编号存储
+        this.nodes = [];
         this.build();
       }
       build() {
@@ -252,7 +346,9 @@
             let m = (l + r) >> 1;
             node.left = buildRec(l, m);
             node.right = buildRec(m + 1, r);
-            node.val = node.left.val + node.right.val;
+            if (opType === 'sum') node.val = node.left.val + node.right.val;
+            else if (opType === 'min') node.val = Math.min(node.left.val, node.right.val);
+            else node.val = Math.max(node.left.val, node.right.val);
           }
           this.nodes.push(node);
           return node;
@@ -262,15 +358,18 @@
       // 区间查询，返回路径节点
       query(qL, qR) {
         let path = [];
+        let highlightRange = [qL, qR];
         const dfs = (node, l, r) => {
-          if (!node || r < qL || l > qR) return 0;
+          if (!node || r < qL || l > qR) return opType === 'sum' ? 0 : (opType === 'min' ? Infinity : -Infinity);
           path.push(node);
           if (qL <= l && r <= qR) return node.val;
           let m = (l + r) >> 1;
-          return dfs(node.left, l, m) + dfs(node.right, m + 1, r);
+          if (opType === 'sum') return dfs(node.left, l, m) + dfs(node.right, m + 1, r);
+          if (opType === 'min') return Math.min(dfs(node.left, l, m), dfs(node.right, m + 1, r));
+          return Math.max(dfs(node.left, l, m), dfs(node.right, m + 1, r));
         };
         let res = dfs(this.root, 0, this.arr.length - 1);
-        return {res, path};
+        return {res, path, highlightRange};
       }
       // 单点更新，返回路径节点和被修改节点
       update(idx, val) {
@@ -288,12 +387,15 @@
           if (idx <= m) dfs(node.left, l, m);
           else dfs(node.right, m + 1, r);
           let old = node.val;
-          node.val = node.left.val + node.right.val;
+          if (opType === 'sum') node.val = node.left.val + node.right.val;
+          else if (opType === 'min') node.val = Math.min(node.left.val, node.right.val);
+          else node.val = Math.max(node.left.val, node.right.val);
           if (node.val !== old) affected.push(node);
         };
         dfs(this.root, 0, this.arr.length - 1);
         this.arr[idx] = val;
-        return {path, affected};
+        arrRaw[idx] = val;
+        return {path, affected, updateIdx: idx};
       }
     }
 
@@ -304,7 +406,40 @@
     const nodeGapY = 70;
     let tree = null;
     let animating = false;
+    let opType = 'sum'; // sum, min, max
+    let arrRaw = [];
+    // --- 原始数组渲染与高亮 ---
+    function renderArrayBar(highlightRange = [], updateIdx = -1) {
+      const bar = document.getElementById('array-bar');
+      if (!arrRaw.length) { bar.innerHTML = ''; return; }
+      bar.innerHTML = '';
+      for (let i = 0; i < arrRaw.length; ++i) {
+        let item = document.createElement('div');
+        item.className = 'array-item';
+        if (highlightRange.length && i >= highlightRange[0] && i <= highlightRange[1]) item.classList.add('highlight');
+        if (i === updateIdx) item.classList.add('update');
+        item.innerHTML = `<span>${arrRaw[i]}</span><span class="array-index">${i}</span>`;
+        bar.appendChild(item);
+      }
+    }
+    // --- 节点悬浮提示 ---
+    let tooltip = null;
+    function showTooltip(x, y, html) {
+      if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.className = 'seg-tooltip';
+        document.body.appendChild(tooltip);
+      }
+      tooltip.innerHTML = html;
+      tooltip.style.left = (x + 12) + 'px';
+      tooltip.style.top = (y - 10) + 'px';
+      tooltip.style.opacity = 1;
+    }
+    function hideTooltip() {
+      if (tooltip) tooltip.style.opacity = 0;
+    }
 
+    // --- 树形结构布局 ---
     function layoutTree(node, depth, xMin, xMax, posMap) {
       if (!node) return;
       let x = (xMin + xMax) / 2;
@@ -343,27 +478,25 @@
       svg.setAttribute('width', width);
       svg.setAttribute('height', height);
 
-      // 画边
+      // 画边（贝塞尔曲线）
       function drawEdges(node) {
         if (!node) return;
         if (node.left) {
-          let line = document.createElementNS(svgNS, 'line');
-          line.setAttribute('x1', node.x);
-          line.setAttribute('y1', node.y);
-          line.setAttribute('x2', node.left.x);
-          line.setAttribute('y2', node.left.y);
-          line.setAttribute('class', 'seg-edge');
-          svg.appendChild(line);
+          let pathEl = document.createElementNS(svgNS, 'path');
+          let mx = (node.x + node.left.x) / 2;
+          let d = `M${node.x},${node.y} C${mx},${node.y+30} ${mx},${node.left.y-30} ${node.left.x},${node.left.y}`;
+          pathEl.setAttribute('d', d);
+          pathEl.setAttribute('class', 'seg-edge');
+          svg.appendChild(pathEl);
           drawEdges(node.left);
         }
         if (node.right) {
-          let line = document.createElementNS(svgNS, 'line');
-          line.setAttribute('x1', node.x);
-          line.setAttribute('y1', node.y);
-          line.setAttribute('x2', node.right.x);
-          line.setAttribute('y2', node.right.y);
-          line.setAttribute('class', 'seg-edge');
-          svg.appendChild(line);
+          let pathEl = document.createElementNS(svgNS, 'path');
+          let mx = (node.x + node.right.x) / 2;
+          let d = `M${node.x},${node.y} C${mx},${node.y+30} ${mx},${node.right.y-30} ${node.right.x},${node.right.y}`;
+          pathEl.setAttribute('d', d);
+          pathEl.setAttribute('class', 'seg-edge');
+          svg.appendChild(pathEl);
           drawEdges(node.right);
         }
       }
@@ -403,6 +536,12 @@
         range.textContent = `[${node.l},${node.r}]`;
         g.appendChild(range);
 
+        // 悬浮提示
+        g.addEventListener('mousemove', e => {
+          showTooltip(e.clientX, e.clientY, `区间: [${node.l},${node.r}]<br>值: ${node.val}`);
+        });
+        g.addEventListener('mouseleave', hideTooltip);
+
         svg.appendChild(g);
 
         drawNodes(node.left);
@@ -417,24 +556,25 @@
     function sleep(ms) {
       return new Promise(res => setTimeout(res, ms));
     }
-    async function animatePath(tree, path, type, affected = []) {
+    async function animatePath(tree, path, type, affected = [], arrRange = [], updateIdx = -1) {
       let highlight = {};
-      // 动画顺序从下往上
       let revPath = path.slice().reverse();
       for (let i = 0; i < revPath.length; ++i) {
         highlight = {};
         for (let j = 0; j <= i; ++j) highlight[revPath[j].idx] = type;
         for (let node of affected) highlight[node.idx] = 'affected';
         renderTree(tree, highlight, [revPath[i].idx]);
+        renderArrayBar(arrRange, updateIdx);
         await sleep(400);
       }
-      // 最终高亮所有路径
       highlight = {};
       for (let node of revPath) highlight[node.idx] = type;
       for (let node of affected) highlight[node.idx] = 'affected';
       renderTree(tree, highlight, affected.map(n => n.idx));
+      renderArrayBar(arrRange, updateIdx);
       await sleep(600);
-      renderTree(tree); // 恢复默认
+      renderTree(tree);
+      renderArrayBar();
     }
 
     // --- 交互逻辑 ---
@@ -476,13 +616,14 @@
         let highlight = {};
         for (let j = 0; j <= i; ++j) highlight[buildPath[j].idx] = 'build';
         renderTree(tree, highlight, [buildPath[i].idx]);
+        renderArrayBar();
         await sleep(220);
       }
       renderTree(tree);
+      renderArrayBar();
       animating = false;
       showTip('线段树构建完成！可尝试区间查询或单点更新。', 'var(--success)');
     };
-
     document.getElementById('query-btn').onclick = async function() {
       if (animating || !tree) return;
       let l = parseInt(document.getElementById('query-l').value);
@@ -492,13 +633,12 @@
         return;
       }
       animating = true;
-      showTip(`查询区间 [${l}, ${r}] 的区间和...`);
-      let {res, path} = tree.query(l, r);
-      await animatePath(tree, path, 'query');
-      showTip(`区间 [${l}, ${r}] 的区间和为 ${res}。`, 'var(--accent)');
+      showTip(`查询区间 [${l}, ${r}] 的${opType==='sum'?'区间和':opType==='min'?'最小值':'最大值'}...`);
+      let {res, path, highlightRange} = tree.query(l, r);
+      await animatePath(tree, path, 'query', [], highlightRange);
+      showTip(`区间 [${l}, ${r}] 的${opType==='sum'?'区间和':opType==='min'?'最小值':'最大值'}为 ${res}。`, 'var(--accent)');
       animating = false;
     };
-
     document.getElementById('update-btn').onclick = async function() {
       if (animating || !tree) return;
       let idx = parseInt(document.getElementById('update-idx').value);
@@ -509,15 +649,53 @@
       }
       animating = true;
       showTip(`将下标 ${idx} 的值修改为 ${val}...`);
-      let {path, affected} = tree.update(idx, val);
-      await animatePath(tree, path, 'update', affected);
+      let {path, affected, updateIdx} = tree.update(idx, val);
+      await animatePath(tree, path, 'update', affected, [], updateIdx);
       showTip(`已将下标 ${idx} 的值修改为 ${val}，相关区间已更新。`, 'var(--success)');
       animating = false;
+    };
+    // 运算类型切换
+    document.getElementById('op-sum').onclick = function() {
+      if (opType === 'sum') return;
+      opType = 'sum';
+      document.querySelectorAll('.op-type-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      if (arrRaw.length) {
+        tree = new SegmentTree(arrRaw);
+        renderTree(tree);
+        renderArrayBar();
+        showTip('已切换为区间和模式。', 'var(--primary)');
+      }
+    };
+    document.getElementById('op-min').onclick = function() {
+      if (opType === 'min') return;
+      opType = 'min';
+      document.querySelectorAll('.op-type-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      if (arrRaw.length) {
+        tree = new SegmentTree(arrRaw);
+        renderTree(tree);
+        renderArrayBar();
+        showTip('已切换为区间最小值模式。', 'var(--primary)');
+      }
+    };
+    document.getElementById('op-max').onclick = function() {
+      if (opType === 'max') return;
+      opType = 'max';
+      document.querySelectorAll('.op-type-btn').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      if (arrRaw.length) {
+        tree = new SegmentTree(arrRaw);
+        renderTree(tree);
+        renderArrayBar();
+        showTip('已切换为区间最大值模式。', 'var(--primary)');
+      }
     };
 
     // 初始渲染
     window.onload = () => {
       renderTree(null);
+      renderArrayBar();
     };
     // 移动端适配：输入框宽度
     if (window.innerWidth < 600) {
